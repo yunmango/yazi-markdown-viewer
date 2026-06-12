@@ -1,0 +1,89 @@
+{
+  "document": {
+    "block_suffix": "\n",
+    "margin": 2
+  },
+  "block_quote": {
+    "indent": 1,
+    "indent_token": "▏ ",
+    "color": "8",
+    "italic": true
+  },
+  "paragraph": {},
+  "list": {
+    "level_indent": 2
+  },
+  "heading": {
+    "block_suffix": "\n",
+    "bold": true,
+    "color": "15"
+  },
+  "h1": {
+    "prefix": "",
+    "block_prefix": "\n",
+    "block_suffix": "\n",
+    "color": "15",
+    "bold": true,
+    "underline": true
+  },
+  "h2": {
+    "prefix": "",
+    "block_prefix": "\n",
+    "color": "15",
+    "bold": true,
+    "underline": true
+  },
+  "h3": {
+    "prefix": "",
+    "block_prefix": "\n",
+    "color": "15",
+    "bold": true
+  },
+  "h4": {
+    "prefix": "",
+    "color": "7",
+    "bold": true
+  },
+  "h5": {
+    "prefix": "",
+    "color": "7",
+    "bold": true
+  },
+  "h6": {
+    "prefix": "",
+    "color": "8",
+    "bold": true
+  },
+  "text": {},
+  "strikethrough": { "crossed_out": true },
+  "emph": { "italic": true },
+  "strong": { "bold": true },
+  "hr": { "color": "8", "format": "\n────────────────────────────────────────\n" },
+  "item": { "block_prefix": "• " },
+  "enumeration": { "block_prefix": ". " },
+  "task": { "ticked": "✓ ", "unticked": "☐ " },
+  "link": { "color": "12", "underline": true },
+  "link_text": { "color": "12" },
+  "image": { "color": "12", "underline": true },
+  "image_text": { "color": "8", "format": "이미지: {{.text}}" },
+  "code": {
+    "prefix": " ",
+    "suffix": " ",
+    "color": "15",
+    "background_color": "8"
+  },
+  "code_block": {
+    "margin": 2,
+    "theme": "github-dark"
+  },
+  "table": {
+    "center_separator": "┼",
+    "column_separator": "│",
+    "row_separator": "─"
+  },
+  "definition_list": {},
+  "definition_term": { "bold": true },
+  "definition_description": {},
+  "html_block": {},
+  "html_span": {}
+}
