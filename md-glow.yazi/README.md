@@ -1,4 +1,4 @@
-# mdglow.yazi
+# md-glow.yazi
 
 Markdown previewer for Yazi, powered by `glow`.
 
@@ -11,24 +11,30 @@ preloader so nearby Markdown files can be rendered before they are hovered.
 - Yazi 26.5 or newer
 - `glow` in `PATH`
 
+## Install
+
+```sh
+ya pkg add yunmango/yazi-markdown-viewer:md-glow
+```
+
 ## Yazi Config
 
 ```toml
 [[plugin.prepend_previewers]]
 url = "*.{md,markdown,mdown,mkdn}"
-run = "mdglow"
+run = "md-glow"
 
 [[plugin.prepend_previewers]]
 mime = "text/markdown"
-run = "mdglow"
+run = "md-glow"
 
 [[plugin.prepend_preloaders]]
 url = "*.{md,markdown,mdown,mkdn}"
-run = "mdglow"
+run = "md-glow"
 
 [[plugin.prepend_preloaders]]
 mime = "text/markdown"
-run = "mdglow"
+run = "md-glow"
 ```
 
 ## Notes

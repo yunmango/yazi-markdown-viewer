@@ -1,11 +1,11 @@
---- mdglow.yazi — glow 기반 Markdown 프리뷰어 (yazi 26.5.6 전용)
+--- md-glow.yazi — glow 기반 Markdown 프리뷰어 (yazi 26.5.6 전용)
 --- glow 출력을 한 번만 렌더링해 디스크에 캐시하고, 스크롤 시엔 캐시를 읽어
 --- 파싱·스크롤만 수행한다. preload로 커서 주변 파일을 백그라운드에서 미리
 --- 렌더링해 첫 표시 지연을 없앤다.
 
 local M = {}
 
-local PLUGIN = "mdglow"
+local PLUGIN = "md-glow"
 
 -- preload(투기적 사전 렌더링)로 처리할 최대 파일 크기 (1MiB).
 -- 이보다 큰 파일은 hover 시 peek이 on-demand로만 렌더링한다.
@@ -22,7 +22,7 @@ local function cache_url(job)
 	if not base then
 		return nil
 	end
-	return Url(tostring(base) .. "-mdglow-" .. job.area.w)
+	return Url(tostring(base) .. "-md-glow-" .. job.area.w)
 end
 
 -- 캐시 파일 전체를 문자열로 읽는다

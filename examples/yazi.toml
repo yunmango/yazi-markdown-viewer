@@ -1,15 +1,15 @@
 [[plugin.prepend_previewers]]
 url = "*.{md,markdown,mdown,mkdn}"
-run = "mdglow"
+run = "md-glow"
 
 [[plugin.prepend_previewers]]
 mime = "text/markdown"
-run = "mdglow"
+run = "md-glow"
 
 [[plugin.prepend_preloaders]]
 url = "*.{md,markdown,mdown,mkdn}"
-run = "mdglow"
+run = "md-glow"
 
 [[plugin.prepend_preloaders]]
 mime = "text/markdown"
-run = "mdglow"
+run = "md-glow"
