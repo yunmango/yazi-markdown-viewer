@@ -8,14 +8,13 @@ The installable Yazi plugin in this repository is `md-glow.yazi`.
 ## Features
 
 - Renders Markdown previews through `glow`
-- Caches rendered ANSI output per file and preview width
-- Uses Yazi preloaders to render nearby Markdown files in the background
+- Supports Yazi 26.x by avoiding newer cache-specific plugin APIs
 - Falls back to Yazi's built-in `code` previewer when `glow` fails
 - Ships a VSCode-like Glamour style in `assets/vscode.json`
 
 ## Requirements
 
-- Yazi 26.5 or newer
+- Yazi 26 or newer
 - `glow` in `PATH`
 
 ## Install
@@ -31,7 +30,7 @@ This installs the `md-glow.yazi` package directory from this repository as the
 them into the Yazi plugin directory, and locks the resolved revision in
 `~/.config/yazi/package.toml`.
 
-Then add the previewer and preloader rules to `~/.config/yazi/yazi.toml`:
+Then add the previewer rules to `~/.config/yazi/yazi.toml`:
 
 ```toml
 [[plugin.prepend_previewers]]
@@ -39,14 +38,6 @@ url = "*.{md,markdown,mdown,mkdn}"
 run = "md-glow"
 
 [[plugin.prepend_previewers]]
-mime = "text/markdown"
-run = "md-glow"
-
-[[plugin.prepend_preloaders]]
-url = "*.{md,markdown,mdown,mkdn}"
-run = "md-glow"
-
-[[plugin.prepend_preloaders]]
 mime = "text/markdown"
 run = "md-glow"
 ```
@@ -81,7 +72,7 @@ symlink, remove the symlink first to avoid a plugin-directory conflict.
 
 ## Customization
 
-- Scroll speed: edit `local speed = 5` in `md-glow.yazi/main.lua`
+- Scroll speed: edit `local SCROLL_SPEED = 5` in `md-glow.yazi/main.lua`
 - Style: edit `md-glow.yazi/assets/vscode.json`
 - One-off style override: set `YAZI_MARKDOWN_VIEWER_STYLE=/path/to/style.json`
 

@@ -1,121 +1,149 @@
---- md-glow.yazi — glow 기반 Markdown 프리뷰어 (yazi 26.5.6 전용)
---- glow 출력을 한 번만 렌더링해 디스크에 캐시하고, 스크롤 시엔 캐시를 읽어
---- 파싱·스크롤만 수행한다. preload로 커서 주변 파일을 백그라운드에서 미리
---- 렌더링해 첫 표시 지연을 없앤다.
+--- md-glow.yazi - Markdown previewer powered by glow.
+---
+--- This implementation intentionally sticks to APIs available across Yazi 26.x:
+--- Command:arg(), ya.preview_widget(), ya.preview_code(), and ya.emit().
+--- It avoids newer cache/preload file APIs so the plugin works on 26.1+.
 
 local M = {}
 
 local PLUGIN = "md-glow"
+local MIN_WIDTH = 20
+local DEFAULT_WIDTH = 80
+local SCROLL_SPEED = 5
 
--- preload(투기적 사전 렌더링)로 처리할 최대 파일 크기 (1MiB).
--- 이보다 큰 파일은 hover 시 peek이 on-demand로만 렌더링한다.
-local PRELOAD_MAX = 1 << 20
-
--- VSCode 풍 커스텀 테마 경로. ya pkg는 assets/ 디렉터리만 추가 자산으로 배포한다.
-local STYLE = os.getenv("YAZI_MARKDOWN_VIEWER_STYLE")
-	or ((os.getenv("HOME") or "") .. "/.config/yazi/plugins/" .. PLUGIN .. ".yazi/assets/vscode.json")
-
--- skip과 무관한 캐시 경로 (폭을 접미사로 붙여 리사이즈 시 갱신).
--- peek/preload가 동일한 경로를 써야 캐시가 공유된다.
-local function cache_url(job)
-	local base = ya.file_cache({ file = job.file, skip = 0 })
-	if not base then
-		return nil
+local function plugin_style()
+	local override = os.getenv("YAZI_MARKDOWN_VIEWER_STYLE")
+	if override and override ~= "" then
+		return override
 	end
-	return Url(tostring(base) .. "-md-glow-" .. job.area.w)
+
+	return (os.getenv("HOME") or "") .. "/.config/yazi/plugins/" .. PLUGIN .. ".yazi/assets/vscode.json"
 end
 
--- 캐시 파일 전체를 문자열로 읽는다
-local function read_cache(url)
-	local fd = fs.access():read(true):open(url)
-	if not fd then
-		return nil
+local function file_path(file)
+	if file.path then
+		return tostring(file.path)
 	end
-	local parts = {}
-	while true do
-		local chunk = fd:read(1 << 20)
-		if not chunk then
-			ya.drop(fd)
-			return nil
-		elseif #chunk == 0 then
-			break
+
+	return tostring(file.url)
+end
+
+local function preview_text(job, text)
+	local widget = ui.Text.parse(text):area(job.area)
+
+	if ya.preview_widget then
+		return ya.preview_widget(job, widget)
+	end
+
+	return ya.preview_widgets(job, { widget })
+end
+
+local function fallback(job)
+	if ya.preview_code then
+		return ya.preview_code({
+			area = job.area,
+			file = job.file,
+			mime = "text/plain",
+			skip = job.skip,
+		})
+	end
+
+	local ok, code = pcall(require, "code")
+	if ok and type(code.peek) == "function" then
+		local called, result = pcall(function()
+			return code:peek(job)
+		end)
+		if called then
+			return result
 		end
-		parts[#parts + 1] = chunk
+
+		called, result = pcall(function()
+			return code.peek(job)
+		end)
+		if called then
+			return result
+		end
 	end
-	local rendered = table.concat(parts)
-	ya.drop(fd)
-	return rendered
+
+	return preview_text(job, "Markdown preview failed: unable to run glow.\n")
 end
 
--- glow로 마크다운을 렌더링한 ANSI 문자열을 반환 (실패 시 nil)
-local function render(job)
-	local output = Command("glow")
+local function emit_peek(job, skip, upper_bound)
+	local payload = {
+		math.max(0, skip),
+		only_if = job.file.url,
+		upper_bound = upper_bound or nil,
+	}
+
+	if ya.emit then
+		return ya.emit("peek", payload)
+	end
+
+	return ya.mgr_emit("peek", payload)
+end
+
+local function preview_width(job)
+	local width = job.area and job.area.w or DEFAULT_WIDTH
+	if width < MIN_WIDTH then
+		return DEFAULT_WIDTH
+	end
+
+	return width
+end
+
+local function spawn_glow(job)
+	return Command("glow")
 		:arg({
 			"--style",
-			STYLE,
+			plugin_style(),
 			"--width",
-			tostring(job.area.w),
+			tostring(preview_width(job)),
 			"--",
-			tostring(job.file.path),
+			file_path(job.file),
 		})
 		:env("CLICOLOR_FORCE", "1")
 		:stdout(Command.PIPED)
-		:stderr(Command.NULL)
-		:output()
-
-	if not output or not output.status.success or output.stdout == "" then
-		return nil
-	end
-	return (output.stdout:gsub("\t", string.rep(" ", rt.preview.tab_size)))
+		:stderr(Command.PIPED)
+		:spawn()
 end
 
 function M:peek(job)
-	local cache = cache_url(job)
-	if not cache then
-		return require("code"):peek(job)
+	local child = spawn_glow(job)
+	if not child then
+		return fallback(job)
 	end
 
-	local rendered
-	if fs.cha(cache) then
-		rendered = read_cache(cache)
-	end
-	if not rendered then
-		rendered = render(job)
-		if not rendered then
-			return require("code"):peek(job)
+	local limit = math.max(1, job.area.h)
+	local seen, lines = 0, {}
+
+	repeat
+		local line, event = child:read_line()
+		if event == 1 then
+			child:start_kill()
+			return fallback(job)
+		elseif event ~= 0 then
+			break
 		end
-		fs.write(cache, rendered)
+
+		seen = seen + 1
+		if seen > job.skip then
+			lines[#lines + 1] = line
+		end
+	until seen >= job.skip + limit
+
+	child:start_kill()
+
+	if job.skip > 0 and seen < job.skip + limit then
+		return emit_peek(job, seen - limit, true)
 	end
 
-	-- 마지막 줄 아래로 스크롤되지 않도록 상한 처리
-	local _, total = rendered:gsub("\n", "")
-	local max_skip = math.max(0, total - job.area.h + 1)
-	if job.skip > max_skip then
-		return ya.emit("peek", { max_skip, only_if = job.file.url, upper_bound = true })
-	end
-
-	ya.preview_widget(job, ui.Text.parse(rendered):area(job.area):scroll(0, job.skip))
+	local rendered = table.concat(lines):gsub("\t", string.rep(" ", rt.preview.tab_size))
+	return preview_text(job, rendered)
 end
 
--- 백그라운드 워커에서 호출됨. 커서 주변 .md 파일을 미리 렌더링해 캐시에 저장.
--- 사용자가 hover하면 peek은 캐시만 읽으므로 첫 표시가 즉각적이다.
-function M:preload(job)
-	-- 큰 파일은 투기적으로 미리 렌더링하지 않는다(자원 낭비 방지).
-	-- 실제로 hover하면 peek이 그때 on-demand로 처리한다.
-	local cha = job.file.cha
-	if cha and cha.len > PRELOAD_MAX then
-		return true
-	end
-
-	local cache = cache_url(job)
-	if not cache or fs.cha(cache) then
-		return true -- 캐시 불가 파일이거나 이미 캐시됨
-	end
-	local rendered = render(job)
-	if rendered then
-		fs.write(cache, rendered)
-	end
-	return true -- glow 실패는 peek의 code 폴백이 처리
+-- Keep preloader rules harmless on all Yazi 26.x versions. Rendering happens in peek().
+function M:preload(_)
+	return true
 end
 
 function M:seek(job)
@@ -123,12 +151,8 @@ function M:seek(job)
 	if not h or h.url ~= job.file.url then
 		return
 	end
-	-- 휠 한 칸당 스크롤할 줄 수 (값을 키우면 더 빨라짐)
-	local speed = 5
-	ya.emit("peek", {
-		math.max(0, cx.active.preview.skip + job.units * speed),
-		only_if = job.file.url,
-	})
+
+	return emit_peek(job, cx.active.preview.skip + job.units * SCROLL_SPEED)
 end
 
 return M

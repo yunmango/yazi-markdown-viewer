@@ -2,13 +2,12 @@
 
 Markdown previewer for Yazi, powered by `glow`.
 
-This plugin renders Markdown once, stores the rendered ANSI output in Yazi's
-preview cache, and reuses that cache while scrolling. It also implements a
-preloader so nearby Markdown files can be rendered before they are hovered.
+This plugin renders Markdown in Yazi's preview pane with `glow` while staying on
+the stable Yazi 26.x previewer API surface.
 
 ## Requirements
 
-- Yazi 26.5 or newer
+- Yazi 26 or newer
 - `glow` in `PATH`
 
 ## Install
@@ -25,14 +24,6 @@ url = "*.{md,markdown,mdown,mkdn}"
 run = "md-glow"
 
 [[plugin.prepend_previewers]]
-mime = "text/markdown"
-run = "md-glow"
-
-[[plugin.prepend_preloaders]]
-url = "*.{md,markdown,mdown,mkdn}"
-run = "md-glow"
-
-[[plugin.prepend_preloaders]]
 mime = "text/markdown"
 run = "md-glow"
 ```
